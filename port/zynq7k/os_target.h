@@ -281,8 +281,16 @@ private:
 
 //--------------------------------------------------------------------------
 //
-//    System timer interrupt service routine
+//    System timer
 //
+//--------------------------------------------------------------------------
+//
+//    Setup and start system timer
+//
+//    Cortex-A9 CPU private timer is used as RTOS system timer
+//
+#include <z7ptmr.h>
+//--------------------------------------------------------------------
 INLINE void system_timer_isr()
 {
     OS::TISRW ISR;
@@ -296,6 +304,20 @@ INLINE void system_timer_isr()
 #endif
 
     Kernel.system_timer();
+}
+//--------------------------------------------------------------------
+//
+//    f:  private timer clock, CPU_x2 clock (L2 domain clock), MHz
+//    t:  system timer interrupt inteval, us
+//    pr: system timer interrupt priority, integer value 0..30
+//
+INLINE void start_system_timer(uint32_t f, uint32_t t, size_t pr)
+{
+    ps7_register_isr(&OS::system_timer_isr, PS7IRQ_ID_PTMR);
+    gic_set_priority(PS7IRQ_ID_PTMR, pr);
+    gic_int_enable(PS7IRQ_ID_PTMR);
+    PrivateTimer::set_reload_value(f, t); // MHz, us
+    PrivateTimer::start();
 }
 
 } // namespace OS
